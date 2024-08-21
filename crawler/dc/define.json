@@ -1,0 +1,103 @@
+{
+  "Comment": "Step Function to call Lambda functions with dc crawling",
+  "StartAt": "dc_lv1",
+  "States": {
+    "dc_lv1": {
+      "Type": "Task",
+      "Resource": "",
+      "Next": "MapState1"
+    },
+    "MapState1": {
+      "Type": "Map",
+      "ItemsPath": "$.search_pos",
+      "MaxConcurrency": 10,
+      "Parameters": {
+        "search_url.$": "$.search_url",
+        "search_pos.$": "$$.Map.Item.Value",
+        "queue_url.$": "$.queue_url"
+      },
+      "ResultPath": "$.result",
+      "Iterator": {
+        "StartAt": "dc_lv2",
+        "States": {
+          "dc_lv2": {
+            "Type": "Task",
+            "Resource": "",
+            "Next": "MapState2"
+          },
+          "MapState2": {
+            "Type": "Map",
+            "ItemsPath": "$.page_urls",
+            "MaxConcurrency": 5,
+            "Parameters": {
+              "page_urls.$": "$$.Map.Item.Value",
+              "queue_url.$": "$.queue_url"
+            },
+            "Iterator": {
+              "StartAt": "dc_lv3",
+              "States": {
+                "dc_lv3": {
+                  "Type": "Task",
+                  "Resource": "",
+                  "Next": "MapState3"
+                },
+                "MapState3": {
+                  "Type": "Map",
+                  "ItemsPath": "$.post_urls",
+                  "MaxConcurrency": 10,
+                  "Parameters": {
+                    "post_urls.$": "$$.Map.Item.Value",
+                    "queue_url.$": "$.queue_url"
+                  },
+                  "Iterator": {
+                    "StartAt": "dc_lv4",
+                    "States": {
+                      "dc_lv4": {
+                        "Type": "Task",
+                        "Resource": "",
+                        "End": true
+                      }
+                    }
+                  },
+                  "End": true
+                }
+              }
+            },
+            "End": true
+          }
+        }
+      },
+      "Next": "dc_lv5"
+    },
+    "dc_lv5": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "FunctionName": "",
+        "Payload": {
+          "queue_url.$": "$.queue_url",
+          "bucket": {
+            "name": "dc-crawler-01",
+            "path": "dc"
+          },
+          "file_name.$": "$.file_name"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "End": true
+    }
+  }
+}

@@ -28,6 +28,10 @@ TYPE_POST = 0
 TYPE_COMMENT = 1
 
 
+# data sources
+DATA_SOURCES = ['dcinside', 'naver', 'bobae', 'clien']
+
+
 # 작성 날짜 변환 함수
 def str2datetime_dcinside(text: str) -> datetime:
     """
@@ -203,189 +207,214 @@ def str2num_naver(text: str) -> int:
     return int(float(num_text) * base)
 
 
-# jsonl 변환 함수
-def jsonl2csv(filename: str, data_source: str) -> None:
+# comment 정보 변환
+def get_comment_info_dcinside(comment_info: dict) -> list:
     """
-    data source에 따라 데이터 포멧을 통일화하는 함수
-    :param filename: 변환할 게시글 데이터 파일의 이름
+    DCinside 게시글의 댓글 정보를 정해진 포멧에 따라 변환
+    :param comment_info: 댓글 정보가 들어있는 딕셔너리
+    :return: 정해진 csv column 순서에 따라 배치된 리스트
+    """
+    content = preprocessing_text_dcinside(comment_info['content'])
+    created_at = str2datetime_dcinside(comment_info['created_at'])
+
+    return [content,
+            created_at,
+            0, # viewed
+            0, # liked
+            TYPE_COMMENT, # post_typee
+            0, # num_of_comments
+            0, # seconds_per_comment
+            ]
+
+
+def get_comment_info_naver(comment_info: dict) -> list:
+    """
+    네이버 카페 게시글의 댓글 정보를 정해진 포멧에 따라 변환
+    :param comment_info: 댓글 정보가 들어있는 딕셔너리
+    :return: 정해진 csv column 순서에 따라 배치된 리스트
+    """
+    content = preprocessing_text_naver(comment_info['content'])
+    created_at = str2datetime_naver(comment_info['created_at'])
+
+    return [content,
+            created_at,
+            0, # viewed
+            0, # liked
+            TYPE_COMMENT, # post_type
+            0, # num_of_comments
+            0, # seconds_per_comment
+            ]
+
+
+def get_comment_info_bobae(comment_info: dict) -> list:
+    """
+    보배드림 게시글의 댓글 정보를 정해진 포멧에 따라 변환
+    :param comment_info: 댓글 정보가 들어있는 딕셔너리
+    :return: 정해진 csv column 순서에 따라 배치된 리스트
+    """
+    content = preprocessing_text_naver(comment_info['content'])
+    created_at = str2datetime_bobae(comment_info['created_at'])
+
+    return [content,
+            created_at,
+            0, # viewed
+            0, # liked
+            TYPE_COMMENT, # post_type
+            0, # num_of_comments
+            0, # seconds_per_comment
+            ]
+
+
+def get_comment_info_clien(comment_info: dict) -> list:
+    """
+    클리앙 게시글의 댓글 정보를 정해진 포멧에 따라 변환
+    :param comment_info: 댓글 정보가 들어있는 딕셔너리
+    :return: 정해진 csv column 순서에 따라 배치된 리스트
+    """
+    content = preprocessing_text_naver(comment_info['content'])
+    created_at = str2datetime_clien(comment_info['created_at'])
+    return [content,
+            created_at,
+            0, # viewed
+            0, # liked
+            TYPE_COMMENT, # post_type
+            0, # num_of_comments
+            0, # seconds_per_comment
+            ]
+
+
+def get_comment_info(comment_info: dict, data_source: str) -> list:
+    """
+    data source에 따라 댓글 정보 포멧을 통일화하는 함수
+    :param post_info: 변환할 게시글 정보
     :param data_source: 게시글을 가져온 커뮤니티 이름, [dcinside, naver, bobae, clien] 중 하나 선택
     """
     if data_source == 'dcinside':
-        jsonl2csv_dcinside(filename)
+        return get_comment_info_dcinside(comment_info)
     elif data_source == 'naver':
-        jsonl2csv_naver(filename)
+        return get_comment_info_naver(comment_info)
     elif data_source == 'bobae':
-        jsonl2csv_bobae(filename)
+        return get_comment_info_bobae(comment_info)
     elif data_source == 'clien':
-        jsonl2csv_clien(filename)
+        return get_comment_info_clien(comment_info)
     else:
         raise ValueError(f'Cannot use data source "{data_source}"')
 
 
-def jsonl2csv_dcinside(filename: str) -> None:
+# post 정보 변환
+def get_post_info_dcinside(post_info: dict) -> list:
     """
-    DCinside 게시글 파일을 csv 형식으로 변환하고 filename.csv로 저장합니다.
+    DCinside 게시글 정보를 정해진 포멧에 따라 변환
+    :param comment_info: 게시글 정보가 들어있는 딕셔너리
+    :return: 정해진 csv column 순서에 따라 배치된 리스트
+    """
+    content = preprocessing_text_dcinside(post_info['title'] + ' ' + post_info['content'])
+    created_at = str2datetime_dcinside(post_info['created_at'])
+
+    return [content,
+            created_at,
+            post_info['viewed'],
+            post_info['liked'],
+            TYPE_POST,
+            post_info['num_of_comments'],
+            0,
+            ]
+
+
+def get_post_info_naver(post_info: dict) -> list:
+    """
+    네이버 카페 게시글 정보를 정해진 포멧에 따라 변환
+    :param comment_info: 게시글 정보가 들어있는 딕셔너리
+    :return: 정해진 csv column 순서에 따라 배치된 리스트
+    """
+    content = preprocessing_text_naver(post_info['title'] + ' ' + post_info['content'])
+    created_at = str2datetime_naver(post_info['created_at'])
+    viewed = str2num_naver(post_info['viewed'].replace('조회', '').replace(',', ''))
+    liked = str2num_naver(post_info['liked'].replace(',', '').strip())
+    num_of_comments = str2num_naver(post_info['num_of_comments'].replace(',', '').strip())
+
+    return [content,
+            created_at,
+            viewed,
+            liked,
+            TYPE_POST,
+            num_of_comments,
+            0, #seconds_per_comments
+            ]
+
+
+def get_post_info_bobae(post_info: dict) -> list:
+    """
+    보배드림 게시글 정보를 정해진 포멧에 따라 변환
+    :param comment_info: 게시글 정보가 들어있는 딕셔너리
+    :return: 정해진 csv column 순서에 따라 배치된 리스트
+    """
+    title = preprocessing_title_bobae(post_info['title'])
+    content = preprocessing_text_naver(title + ' ' + post_info['content'])
+    created_at = str2datetime_bobae(post_info['created_at'])
+    viewed = int(post_info['viewed'].strip())
+    liked = int(post_info['liked'].strip())
+    num_of_comments = len(post_info['comments'])
+
+    # post 정보 저장
+    return [content,
+            created_at,
+            viewed,
+            liked,
+            TYPE_POST,
+            num_of_comments,
+            0, # seconds_per_comments
+            ]
+
+
+def get_post_info_clien(post_info: dict) -> list:
+    """
+    클리앙 게시글 정보를 정해진 포멧에 따라 변환
+    :param comment_info: 게시글 정보가 들어있는 딕셔너리
+    :return: 정해진 csv column 순서에 따라 배치된 리스트
+    """
+    title = preprocessing_title_clien(post_info['title'])
+    content = preprocessing_text_naver(title + ' ' + post_info['content'])
+    created_at = str2datetime_clien(post_info['created_at'])
+    num_of_comments = len(post_info['comments'])
+
+    return [content,
+            created_at,
+            post_info['viewed'],
+            post_info['liked'],
+            TYPE_POST,
+            num_of_comments,
+            0, # seconds_per_comments
+            ]
+
+
+def get_post_info(post_info: dict, data_source: str) -> list:
+    """
+    data source에 따라 게시글 정보 포멧을 통일화하는 함수
+    :param post_info: 변환할 게시글 정보
+    :param data_source: 게시글을 가져온 커뮤니티 이름, [dcinside, naver, bobae, clien] 중 하나 선택
+    """
+    if data_source == 'dcinside':
+        return get_post_info_dcinside(post_info)
+    elif data_source == 'naver':
+        return get_post_info_naver(post_info)
+    elif data_source == 'bobae':
+        return get_post_info_bobae(post_info)
+    elif data_source == 'clien':
+        return get_post_info_clien(post_info)
+    else:
+        raise ValueError(f'Cannot use data source "{data_source}"')
+
+
+def jsonl2csv(filename: str, data_source: str) -> None:
+    """
+    게시글 파일을 csv 형식으로 변환하고 filename.csv로 저장합니다..
     :param filename: csv 형식으로 변환할 jsonl 파일 이름
+    :param data_source: 게시글을 가져온 커뮤니티, [dcinside, naver, bobae, clien] 중 하나를 선택
     """
-    csv_f = open(filename + '.csv', 'w', encoding='utf-8', newline='\n')
-    csv_writer = csv.writer(csv_f)
-    csv_writer.writerow(['content', 'created_at', 'viewed', 'liked', 'post_type', 'num_of_comments', 'seconds_per_comment'])
+    if data_source not in DATA_SOURCES:
+        raise ValueError(f'Cannot use data source "{data_source}"')
 
-    with open(filename + '.jsonl', 'r', encoding='utf-8') as f:
-        line = f.readline()
-        while line is not None and len(line) > 0:
-            post_info = json.loads(line)
-            post_created_at = str2datetime_dcinside(post_info['created_at'])
-
-            if post_info['comments'] is None:
-                post_info['comments'] = []
-            for comment_info in post_info['comments']:
-                if comment_info['created_at'].strip() == '': # 삭제된 댓글 무시
-                    continue
-                created_at = str2datetime_dcinside(comment_info['created_at'])
-                csv_writer.writerow([preprocessing_text_dcinside(comment_info['content']),
-                                     created_at,
-                                     0,
-                                     0,
-                                     TYPE_COMMENT,
-                                     0,
-                                     0,
-                                     ])
-
-            if post_info['num_of_comments'] > 0:
-                seconds_per_comments = (created_at - post_created_at).seconds / float(post_info['num_of_comments'])
-            else:
-                seconds_per_comments = 0.0
-
-            csv_writer.writerow([preprocessing_text_dcinside(post_info['title'] + ' ' + post_info['content']),
-                                 post_created_at,
-                                 post_info['viewed'],
-                                 post_info['liked'],
-                                 TYPE_POST,
-                                 post_info['num_of_comments'],
-                                 seconds_per_comments,
-                                 ])
-            line = f.readline()
-    csv_f.close()
-
-
-def jsonl2csv_naver(filename: str) -> None:
-    """
-    네이버 카페 게시글 파일을 csv 형식으로 변환하고 filename.csv로 저장합니다..
-    :param filename: csv 형식으로 변환할 jsonl 파일 이름
-    """
-    csv_f = open(filename + '.csv', 'w', encoding='utf-8', newline='\n')
-    csv_writer = csv.writer(csv_f)
-    csv_writer.writerow(['content', 'created_at', 'viewed', 'liked', 'post_type', 'num_of_comments', 'seconds_per_comment'])
-
-    with open(filename + '.jsonl', 'r', encoding='utf-8') as f:
-        line = f.readline()
-        while line is not None and len(line) > 0:
-            post_info = json.loads(line)
-            post_created_at = str2datetime_naver(post_info['created_at'])
-
-            if post_info['comments'] is None:
-                post_info['comments'] = []
-            for comment_info in post_info['comments']:
-                if comment_info['created_at'].strip() == '': # 삭제된 댓글 무시
-                    continue
-                created_at = str2datetime_naver(comment_info['created_at'])
-                csv_writer.writerow([preprocessing_text_naver(comment_info['content']),
-                                     created_at,
-                                     0,
-                                     0,
-                                     TYPE_COMMENT,
-                                     0,
-                                     0,
-                                     ])
-
-            # post 정보 수집
-            post_info['viewed'] = str2num_naver(post_info['viewed'].replace('조회', '').replace(',', ''))
-            post_info['liked'] = str2num_naver(post_info['liked'].replace(',', '').strip())
-            post_info['num_of_comments'] = str2num_naver(post_info['num_of_comments'].replace(',', '').strip()) 
-
-            if post_info['num_of_comments'] > 0:
-                seconds_per_comments = (created_at - post_created_at).seconds / float(post_info['num_of_comments'])
-            else:
-                seconds_per_comments = 0.0
-
-            csv_writer.writerow([preprocessing_text_naver(post_info['title'] + ' ' + post_info['content']),
-                                 post_created_at,
-                                 post_info['viewed'],
-                                 post_info['liked'],
-                                 TYPE_POST,
-                                 post_info['num_of_comments'],
-                                 seconds_per_comments,
-                                 ])
-            line = f.readline()
-    csv_f.close()
-
-
-def jsonl2csv_bobae(filename: str) -> None:
-    """
-    보배드림 게시글 파일을 csv 형식으로 변환하고 filename.csv로 저장합니다..
-    :param filename: csv 형식으로 변환할 jsonl 파일 이름
-    """
-    csv_f = open(filename + '.csv', 'w', encoding='utf-8', newline='\n')
-    csv_writer = csv.writer(csv_f)
-    csv_writer.writerow(['content', 'created_at', 'viewed', 'liked', 'post_type', 'num_of_comments', 'seconds_per_comment'])
-
-    with open(filename + '.jsonl', 'r', encoding='utf-8') as f:
-        line = f.readline()
-        while line is not None and len(line) > 0:
-            post_info = json.loads(line)
-
-            # 크롤링에 실패한 게시글 생략
-            if len(post_info) == 0:
-                line = f.readline()
-                continue
-
-            # comments 정보 수집
-            if post_info['comments'] is None:
-                post_info['comments'] = []
-            for comment_info in post_info['comments']:
-                if comment_info['created_at'].strip() == '': # 삭제된 댓글 무시
-                    continue
-                created_at = str2datetime_bobae(comment_info['created_at'])
-                csv_writer.writerow([preprocessing_text_naver(comment_info['content']),
-                                     created_at,
-                                     0,
-                                     0,
-                                     TYPE_COMMENT,
-                                     0,
-                                     0,
-                                     ])
-                
-            # post 정보 전처리
-            post_info['title'] = preprocessing_title_bobae(post_info['title'])
-            post_info['created_at'] = str2datetime_bobae(post_info['created_at'])
-            post_info['viewed'] = int(post_info['viewed'].strip())
-            post_info['liked'] = int(post_info['liked'].strip())
-            post_info['num_of_comments'] = len(post_info['comments']) 
-
-            if post_info['num_of_comments'] > 0:
-                seconds_per_comments = (created_at - post_info['created_at']).seconds / float(post_info['num_of_comments'])
-            else:
-                seconds_per_comments = 0.0
-
-            # post 정보 저장
-            csv_writer.writerow([preprocessing_text_naver(post_info['title'] + ' ' + post_info['content']),
-                                 post_info['created_at'],
-                                 post_info['viewed'],
-                                 post_info['liked'],
-                                 TYPE_POST,
-                                 post_info['num_of_comments'],
-                                 seconds_per_comments,
-                                 ])
-            line = f.readline()
-    csv_f.close()
-
-
-def jsonl2csv_clien(filename: str) -> None:
-    """
-    클리앙 게시글 파일을 csv 형식으로 변환하고 filename.csv로 저장합니다..
-    :param filename: csv 형식으로 변환할 jsonl 파일 이름
-    """
     csv_f = open(filename + '.csv', 'w', encoding='utf-8', newline='\n')
     csv_writer = csv.writer(csv_f)
     csv_writer.writerow(['content', 'created_at', 'viewed', 'liked', 'post_type', 'num_of_comments', 'seconds_per_comment'])
@@ -406,34 +435,28 @@ def jsonl2csv_clien(filename: str) -> None:
             for comment_info in post_info['comments']:
                 if comment_info['created_at'].strip() == '': # 삭제된 댓글 무시
                     continue
-                created_at = str2datetime_clien(comment_info['created_at'])
-                csv_writer.writerow([preprocessing_text_naver(comment_info['content']),
-                                     created_at,
-                                     0,
-                                     0,
-                                     TYPE_COMMENT,
-                                     0,
-                                     0,
-                                     ])
-                
-            # post 정보 전처리
-            post_info['title'] = preprocessing_title_clien(post_info['title'])
-            post_info['created_at'] = str2datetime_clien(post_info['created_at'])
-            post_info['num_of_comments'] = len(post_info['comments']) 
+                comment = get_comment_info(comment_info, data_source)
+                last_comment_created_at = comment[1] # get created_at
+                csv_writer.writerow(comment)
 
-            if post_info['num_of_comments'] > 0:
-                seconds_per_comments = (created_at - post_info['created_at']).seconds / float(post_info['num_of_comments'])
+            post = get_post_info(post_info, data_source)
+
+            # seconds_per_comment 계산
+            if post[-2] > 0:
+                seconds_per_comment = (last_comment_created_at - post[1]).seconds / float(post[-2])
             else:
-                seconds_per_comments = 0.0
+                seconds_per_comment = 0.0
+            post[-1] = seconds_per_comment
 
             # post 정보 저장
-            csv_writer.writerow([preprocessing_text_naver(post_info['title'] + ' ' + post_info['content']),
-                                 post_info['created_at'],
-                                 post_info['viewed'],
-                                 post_info['liked'],
-                                 TYPE_POST,
-                                 post_info['num_of_comments'],
-                                 seconds_per_comments,
-                                 ])
+            csv_writer.writerow(post)
+
             line = f.readline()
     csv_f.close()
+
+
+if __name__ == '__main__':
+    jsonl2csv('grandeur_dc', 'dcinside')
+    jsonl2csv('naver_cafe_아이오닉6 누수_2024-08-11_14-36-03', 'naver')
+    jsonl2csv('bobae_아이오닉6_2024-08-20T00_00_00', 'bobae')
+    jsonl2csv('clien_iccu', 'clien')

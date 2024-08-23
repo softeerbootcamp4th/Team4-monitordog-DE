@@ -49,12 +49,15 @@ def lambda_handler(event, context):
     try:
         s3_event = event['Records'][0]['s3']
         source_bucket = s3_event['bucket']['name']
+        # key: dc/dc_아이오닉6_2024-8-10_14-00-00.jsonl
         source_key = urllib.parse.unquote_plus(s3_event['object']['key'])
-        source_folder = os.path.splitext(source_key)[0].split('/')[0]
-        source_file = os.path.splitext(source_key)[0].split('/')[-1]
+        source_basename = os.path.splitext(source_key)[0].split('/') 
+        source_folder = source_basename[0]
+        source_file = source_basename[1]
+        source_date = '_'.join(source_file.split('_')[-2:])
         
         destination_bucket = source_bucket  # 또는 다른 버킷을 지정할 수 있습니다.
-        destination_key = f"done/{source_file}_processed{os.path.splitext(source_key)[1]}"
+        destination_key = f"done/{source_date}/{source_file}{os.path.splitext(source_key)[1]}"
 
         logger.info(f"Processing {source_key} from bucket {source_bucket}")
 

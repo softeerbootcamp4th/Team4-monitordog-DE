@@ -229,6 +229,7 @@ def preprocess_post_naver(post_info: dict) -> dict:
     """
     post_info['content'] = preprocess_text_naver(post_info['content'])
     post_info['created_at'] = str2datetime_naver(post_info['created_at'])
+    post_info['created_at'] = datetime.strftime(post_info['created_at'], '%Y-%m-%d %H:%M:%S')
     post_info['viewed'] = str2num_naver(post_info['viewed'].replace('조회', '').replace(',', ''))
     post_info['liked'] = str2num_naver(post_info['liked'].replace(',', '').strip())
     post_info['num_of_comments'] = str2num_naver(post_info['num_of_comments'].replace(',', '').strip())
@@ -254,6 +255,7 @@ def preprocess_post_bobae(post_info: dict) -> dict:
     post_info['title'] = preprocess_title_bobae(post_info['title'])
     post_info['content'] = preprocess_text_naver(post_info['content'])
     post_info['created_at'] = str2datetime_bobae(post_info['created_at'])
+    post_info['created_at'] = datetime.strftime(post_info['created_at'], '%Y-%m-%d %H:%M:%S')
     post_info['viewed'] = int(post_info['viewed'].strip())
     post_info['liked'] = int(post_info['liked'].strip())
     post_info['num_of_comments'] = len(post_info['comments'])
@@ -280,6 +282,7 @@ def preprocess_post_clien(post_info: dict) -> list:
     post_info['title'] = preprocess_title_clien(post_info['title'])
     post_info['content'] = preprocess_text_naver(post_info['content'])
     post_info['created_at'] = str2datetime_clien(post_info['created_at'])
+    post_info['created_at'] = datetime.strftime(post_info['created_at'], '%Y-%m-%d %H:%M:%S')
     post_info['num_of_comments'] = len(post_info['comments'])
 
     if post_info['comments'] is None:

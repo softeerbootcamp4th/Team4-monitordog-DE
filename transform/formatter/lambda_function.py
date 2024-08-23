@@ -14,7 +14,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-def preprocess(input_file_obj, output_file_obj, data_source):
+def preprocess(input_file_obj, output_file_obj, data_source, car_model):
     while True:
         line = input_file_obj.readline()
         if not line:
@@ -26,6 +26,8 @@ def preprocess(input_file_obj, output_file_obj, data_source):
             continue
 
         post_info = preprocess_post(post_info, data_source)
+        post_info['data_source'] = data_source
+        post_info['car_model'] = car_model
 
         processed_line = (json.dumps(post_info, ensure_ascii=False) + '\n').encode('utf-8')
 
@@ -53,11 +55,14 @@ def lambda_handler(event, context):
         source_key = urllib.parse.unquote_plus(s3_event['object']['key'])
         source_basename = os.path.splitext(source_key)[0].split('/') 
         source_folder = source_basename[0]
-        source_file = source_basename[1]
-        source_date = '_'.join(source_file.split('_')[-2:])
+
+        source_file = source_basename[1].split('_')
+        data_source = '_'.join(source_file[:-3])
+        car_model = source_file[-3]
+        source_date = 'T'.join(source_file[-2:])
         
         destination_bucket = source_bucket  # 또는 다른 버킷을 지정할 수 있습니다.
-        destination_key = f"done/{source_date}/{source_file}{os.path.splitext(source_key)[1]}"
+        destination_key = f"done/{source_date}/{data_source}_{car_model}_{source_date}{os.path.splitext(source_key)[1]}"
 
         logger.info(f"Processing {source_key} from bucket {source_bucket}")
 
@@ -68,7 +73,7 @@ def lambda_handler(event, context):
 
         # 파일을 한 줄씩 처리합니다
         data_source = folder2source(source_folder)
-        preprocess(input_file_obj, output_file_obj, data_source)
+        preprocess(input_file_obj, output_file_obj, data_source, car_model)
 
         output_file_obj.seek(0)
 

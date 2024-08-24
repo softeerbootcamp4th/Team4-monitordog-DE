@@ -1,4 +1,5 @@
-from transformers import TextClassificationPipeline, BertForSequenceClassification, AutoTokenizer
+from optimum.onnxruntime import ORTModelForSequenceClassification
+from transformers import TextClassificationPipeline, AutoTokenizer
 
 
 class SentimentModel(object):
@@ -11,7 +12,7 @@ class SentimentModel(object):
         :param model_name: huggingfaces 모델 이름
         """
         self.model_name = model_name
-        self.model = BertForSequenceClassification.from_pretrained(model_name)
+        self.model = ORTModelForSequenceClassification.from_pretrained(model_name, export=True)
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, clean_up_tokenization_spaces=False)
         self.pipe = TextClassificationPipeline(
             model = self.model,

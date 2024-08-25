@@ -26,7 +26,7 @@ TYPE_COMMENT = 1
 
 
 # data sources
-DATA_SOURCES = ['dcinside', 'naver', 'bobae', 'clien']
+DATA_SOURCES = ['dc', 'naver', 'bobae', 'clien']
 
 
 # 작성 날짜 변환 함수
@@ -298,7 +298,7 @@ def preprocess_post_clien(post_info: dict) -> list:
 
 
 def preprocess_post(post_info: dict, data_source: str) -> dict:
-    if data_source == "dcinside":
+    if data_source == "dc":
         return preprocess_post_dcinside(post_info)
     elif data_source == "naver":
         return preprocess_post_naver(post_info)

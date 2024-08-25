@@ -4,13 +4,12 @@
   "States": {
     "dc_lv1": {
       "Type": "Task",
-      "Resource": "",
+      "Resource": "arn:aws:lambda:ap-northeast-2:367354627828:function:dc_lv1",
       "Next": "MapState1"
     },
     "MapState1": {
       "Type": "Map",
       "ItemsPath": "$.search_pos",
-      "MaxConcurrency": 10,
       "Parameters": {
         "search_url.$": "$.search_url",
         "search_pos.$": "$$.Map.Item.Value",
@@ -22,7 +21,7 @@
         "States": {
           "dc_lv2": {
             "Type": "Task",
-            "Resource": "",
+            "Resource": "arn:aws:lambda:ap-northeast-2:367354627828:function:dc_lv2",
             "Next": "MapState2"
           },
           "MapState2": {
@@ -38,13 +37,13 @@
               "States": {
                 "dc_lv3": {
                   "Type": "Task",
-                  "Resource": "",
+                  "Resource": "arn:aws:lambda:ap-northeast-2:367354627828:function:dc_lv3",
                   "Next": "MapState3"
                 },
                 "MapState3": {
                   "Type": "Map",
                   "ItemsPath": "$.post_urls",
-                  "MaxConcurrency": 10,
+                  "MaxConcurrency": 8,
                   "Parameters": {
                     "post_urls.$": "$$.Map.Item.Value",
                     "queue_url.$": "$.queue_url"
@@ -54,7 +53,7 @@
                     "States": {
                       "dc_lv4": {
                         "Type": "Task",
-                        "Resource": "",
+                        "Resource": "arn:aws:lambda:ap-northeast-2:367354627828:function:dc_lv4",
                         "End": true
                       }
                     }
@@ -67,18 +66,19 @@
           }
         }
       },
-      "Next": "dc_lv5"
+      "Next": "dc_lv5_v2",
+      "MaxConcurrency": 3
     },
-    "dc_lv5": {
+    "dc_lv5_v2": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "OutputPath": "$.Payload",
       "Parameters": {
-        "FunctionName": "",
+        "FunctionName": "arn:aws:lambda:ap-northeast-2:367354627828:function:dc-lv5:$LATEST",
         "Payload": {
           "queue_url.$": "$.queue_url",
           "bucket": {
-            "name": "dc-crawler-01",
+            "name": "monitordog-data",
             "path": "dc"
           },
           "file_name.$": "$.file_name"

@@ -8,13 +8,7 @@
       "OutputPath": "$.Payload",
       "Parameters": {
         "FunctionName": "arn:aws:lambda:ap-northeast-2:367354627828:function:bobae-lv1:$LATEST",
-        "Payload": {
-          "keyword": "아이오닉6 누수",
-          "target_prefix": "bobae",
-          "start_date": "2024-08-13T16:00:00",
-          "period": "120",
-          "queue_url": "https://sqs.ap-northeast-2.amazonaws.com/367354627828/naver-crawler-sqs"
-        }
+        "Payload.$": "$"
       },
       "Retry": [
         {
@@ -79,7 +73,7 @@
       "Resource": "arn:aws:states:::lambda:invoke",
       "OutputPath": "$.Payload",
       "Parameters": {
-        "FunctionName": "arn:aws:lambda:ap-northeast-2:367354627828:function:sqs-json-aggregater:$LATEST",
+        "FunctionName": "arn:aws:lambda:ap-northeast-2:367354627828:function:aggregator-v2:$LATEST",
         "Payload": {
           "queue_url.$": "$.body.queue_url",
           "bucket": {

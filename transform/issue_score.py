@@ -1,6 +1,9 @@
 from math import log
 
+import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+from scipy.stats import zscore
 from scipy.spatial.distance import euclidean
 from fastdtw import fastdtw
 
@@ -16,7 +19,7 @@ def get_issue_score(viewed: float, liked: float, num_of_comments: float) -> floa
     return viewed + log(1 + liked) + log(1 + num_of_comments)
 
 
-def dtw_similarity_score(x: pd.Series, y: pd.Series, radius: int = 1) -> float:
+def dtw_similarity_score(a, b, scale_factor: float = 50, radius: int = 1) -> float:
     """
     정규화된 DTW 유사도 계산
     :param x: 그래프를 나타내는 1차원 리스트 (pd.Series)
@@ -25,21 +28,51 @@ def dtw_similarity_score(x: pd.Series, y: pd.Series, radius: int = 1) -> float:
     :return: [0,1] 사이의 실수값, 1에 가까울수록 유사한 그래프
     """
     # 입력이 pandas Series인지 확인
-    if not isinstance(x, pd.Series) or not isinstance(y, pd.Series):
-        raise TypeError("입력은 pandas Series 형태여야 합니다.")
+    if isinstance(a, pd.Series):
+        a = a.to_numpy()
+    if isinstance(b, pd.Series):
+        b = b.to_numpy()
+
+    a_x = np.arange(len(a))[a != 0]
+    b_x = np.arange(len(b))[b != 0]
+
+    a_nonzero = a[a != 0]
+    b_nonzero = b[b != 0]
+
+    num_a_nonzero = len(a_nonzero)
+    num_b_nonzero = len(b_nonzero)
+
+    # 비영 영역이 없는 경우 처리
+    if num_a_nonzero == 0 and num_b_nonzero == 0:
+        return 0.0 # 아무런 신호가 없는 경우 무시하기 위해 0 반환 
+    elif num_a_nonzero == 0 or num_b_nonzero == 0:
+        return 0.0
     
-    # fastdtw 사용
-    raw_distance, _ = fastdtw(list(x.items()), list(y.items()), dist=euclidean, radius=radius)
-    
-    # 정규화를 위한 최대 가능 거리 계산
-    max_seq = max(x.max(), y.max())
-    min_seq = min(x.min(), y.min())
-    max_distance = abs(max_seq - min_seq) * max(len(x), len(y))
-    
+    a_nonzero = zscore(a_nonzero)
+    b_nonzero = zscore(b_nonzero)
+
+    a_nonzero = np.vstack((a_x, a_nonzero)).T
+    b_nonzero = np.vstack((b_x, b_nonzero)).T
+
+    raw_distance, _ = fastdtw(a_nonzero, b_nonzero, radius=radius, dist=euclidean)
+
     # 정규화된 거리 계산 (0과 1 사이의 값)
-    normalized_distance = raw_distance / max_distance
-    
-    # 유사도 점수 계산 (1에 가까울수록 유사함)
-    similarity_score = 1 - normalized_distance
-    
+    similarity_score = np.exp(-raw_distance / scale_factor)
+
     return similarity_score
+
+
+def generate_sparse_time_series(offset=0, length=100, sparsity=0.7, noise_level=0.1):
+    # 기본 시계열 생성
+    time = np.arange(length)
+    signal = np.sin(2 * np.pi * time / 20 + offset) + np.random.normal(0, noise_level, length)
+
+    # 희소성 적용
+    mask = np.random.random(length) > sparsity
+    sparse_signal = np.where(mask, signal, 0)
+
+    # 일부 데이터를 NaN으로 변경
+    nan_mask = np.random.random(length) > 0.9
+    sparse_signal[nan_mask] = 0.0
+
+    return pd.Series(sparse_signal, index=time)

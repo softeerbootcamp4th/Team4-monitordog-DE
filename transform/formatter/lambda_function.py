@@ -95,6 +95,7 @@ def lambda_handler(event, context):
         }
     except Exception as e:
         logger.info('Error processing %s/%s: %s', source_bucket, source_key, str(e))
+        
         return {
             'statusCode': 500,
             'body': json.dumps(f'Error processing {source_bucket}/{source_key}: {str(e)}')

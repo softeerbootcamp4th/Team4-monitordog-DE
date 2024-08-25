@@ -37,15 +37,28 @@ def lambda_handler(event, context):
     # 메시지를 JSONL 포맷으로 변환
     jsonl_data = "\n".join([json.dumps(msg, ensure_ascii=False) for msg in messages])
 
+    # file_name = dc_아반떼_2024-08-24T11:00:00.jsonl
+    parsed_file_name = file_name.split("_")
+    source_date = parsed_file_name[-1][:-6]
+    
+
     # S3에 업로드
     s3.put_object(
         Body=jsonl_data,
         Bucket=bucket_name,
-        Key=f"{bucket_path}/{file_name}",
+        Key=f"raw/{source_date}/{file_name}",
         ContentType="application/jsonl",
     )
 
+    # 포맷팅 -> 감정부석 -> 키워드 결과 추가 후 폴링 루프에서 확인하기 위함
+    destination_key = f"keywords/{source_date}/{file_name}"
+    
+    body = {
+        "bucket_name": bucket_name,
+        "file_name": destination_key
+    }
+
     return {
         "statusCode": 200,
-        "body": f"Successfully uploaded {len(messages)} messages to {bucket_path}/{file_name} in {bucket_name}.",
+        "body": body
     }

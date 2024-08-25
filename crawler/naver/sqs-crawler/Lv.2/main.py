@@ -35,6 +35,7 @@ def lambda_handler(event, context):
     queue_url = event['queue_url']
 
     driver = get_driver()
+
     get_post_info(driver, post_links, file_path)
 
     try:
@@ -43,7 +44,7 @@ def lambda_handler(event, context):
         with open(file_path, 'r') as file:
             for line in file:
                 # 각 라인(메시지)을 읽어서 SQS로 전송
-                json_line = json.dumps(line.strip(), ensure_ascii=False)  # 공백 제거
+                json_line = line 
                 messages += f"{json_line}\n"
                 
         # SQS로 메시지 전송
@@ -134,8 +135,8 @@ def get_post_info(driver, post_links, file_name):
             }
             try:
                 with open(file_name, "a", encoding='utf8') as target_file:
-                    json.dump(post, target_file, ensure_ascii=False)
-                    target_file.write('\n')
+                    json_line = json.dumps(post, ensure_ascii=False)
+                    target_file.write(f'{json_line}\n')
                 logger.info(f"{seq + 1}/{NUM_OF_POSTS}:  {title}")
             except IOError as e:
                 logger.error(f"{seq + 1}/{NUM_OF_POSTS}: 파일 쓰기 오류 발생. 제목: {title}, 링크: {link}")

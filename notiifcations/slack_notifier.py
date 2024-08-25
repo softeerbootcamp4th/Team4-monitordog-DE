@@ -30,10 +30,18 @@ def lambda_handler(event, context):
     alarm_name = message['AlarmName']
     new_state = message['NewStateValue']
     reason = message['NewStateReason']
+    
+    system_name = "Monitordog"
+    problem = f'{alarm_name} 비정상적 상승 (현재 {new_state}, {reason} 유사)'
+    manager = f'김아무개'
+    tel = f'monitorodg@example.com'
 
     slack_message = {
         'channel': SLACK_CHANNEL,
-        'text': "%s state is now %s: %s" % (alarm_name, new_state, reason)
+        'system_name': system_name,
+        'problem': problem,
+        'manager': manager,
+        'tel': tel
     }
     
     req = Request(HOOK_URL, json.dumps(slack_message).encode('utf-8'))

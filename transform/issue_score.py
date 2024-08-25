@@ -2,7 +2,9 @@ from math import log
 
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from scipy.stats import zscore
+from scipy.spatial.distance import euclidean
 from fastdtw import fastdtw
 
 
@@ -17,14 +19,7 @@ def get_issue_score(viewed: float, liked: float, num_of_comments: float) -> floa
     return viewed + log(1 + liked) + log(1 + num_of_comments)
 
 
-def weighted_distance(a, b):
-    """
-    희소 시계열 데이터의 거리 계산을 위해 두 점의 거리를 가중치를 취한 거리 함수 
-    """
-    return np.abs(a - b)
-
-
-def dtw_similarity_score(a, b, scale_factor: float = 0.1, radius: int = 1) -> float:
+def dtw_similarity_score(a, b, scale_factor: float = 50, radius: int = 1) -> float:
     """
     정규화된 DTW 유사도 계산
     :param x: 그래프를 나타내는 1차원 리스트 (pd.Series)
@@ -59,17 +54,25 @@ def dtw_similarity_score(a, b, scale_factor: float = 0.1, radius: int = 1) -> fl
     a_nonzero = np.vstack((a_x, a_nonzero)).T
     b_nonzero = np.vstack((b_x, b_nonzero)).T
 
-    raw_distance, _ = fastdtw(a_nonzero, b_nonzero, radius=radius)
-    print(raw_distance)
+    raw_distance, _ = fastdtw(a_nonzero, b_nonzero, radius=radius, dist=euclidean)
 
     # 정규화된 거리 계산 (0과 1 사이의 값)
-    similarity_score = np.exp(-raw_distance * scale_factor)
+    similarity_score = np.exp(-raw_distance / scale_factor)
 
     return similarity_score
 
 
-if __name__ == '__main__':
-    a = pd.Series([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3000, 6000, 6000, 6000, 6001, 15, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-    b = pd.Series([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1500, 3000, 3000, 3000, 3001, 7, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+def generate_sparse_time_series(offset=0, length=100, sparsity=0.7, noise_level=0.1):
+    # 기본 시계열 생성
+    time = np.arange(length)
+    signal = np.sin(2 * np.pi * time / 20 + offset) + np.random.normal(0, noise_level, length)
 
-    print(dtw_similarity_score(a, b))
+    # 희소성 적용
+    mask = np.random.random(length) > sparsity
+    sparse_signal = np.where(mask, signal, 0)
+
+    # 일부 데이터를 NaN으로 변경
+    nan_mask = np.random.random(length) > 0.9
+    sparse_signal[nan_mask] = 0.0
+
+    return pd.Series(sparse_signal, index=time)

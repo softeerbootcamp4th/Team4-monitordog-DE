@@ -1,0 +1,124 @@
+{
+    "Comment": "A description of my state machine",
+    "StartAt": "Scheduler Timezone Converter",
+    "States": {
+      "Scheduler Timezone Converter": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::lambda:invoke",
+        "OutputPath": "$.Payload.body",
+        "Parameters": {
+          "FunctionName": "arn:aws:lambda:ap-northeast-2:367354627828:function:Scheduler-Timezone_Converter:$LATEST",
+          "Payload": {
+            "keyword.$": "$.keyword",
+            "start_date.$": "$.start_date",
+            "period.$": "$.period"
+          }
+        },
+        "Retry": [
+          {
+            "ErrorEquals": [
+              "Lambda.ServiceException",
+              "Lambda.AWSLambdaException",
+              "Lambda.SdkClientException",
+              "Lambda.TooManyRequestsException"
+            ],
+            "IntervalSeconds": 1,
+            "MaxAttempts": 3,
+            "BackoffRate": 2
+          }
+        ],
+        "Next": "Parallel"
+      },
+      "Parallel": {
+        "Type": "Parallel",
+        "Branches": [
+          {
+            "StartAt": "NAVER CRAWLER",
+            "States": {
+              "NAVER CRAWLER": {
+                "Type": "Task",
+                "Resource": "arn:aws:states:::states:startExecution.sync:2",
+                "OutputPath": "$.Output",
+                "Parameters": {
+                  "StateMachineArn": "arn:aws:states:ap-northeast-2:367354627828:stateMachine:naver-crawler",
+                  "Input": {
+                    "keyword.$": "$.keyword",
+                    "target_prefix": "naver",
+                    "start_date.$": "$.start_date",
+                    "period.$": "$.period",
+                    "queue_url": "https://sqs.ap-northeast-2.amazonaws.com/367354627828/naver-crawler-sqs"
+                  }
+                },
+                "End": true
+              }
+            }
+          },
+          {
+            "StartAt": "DC CRAWLER",
+            "States": {
+              "DC CRAWLER": {
+                "Type": "Task",
+                "Resource": "arn:aws:states:::states:startExecution.sync:2",
+                "OutputPath": "$.Output",
+                "Parameters": {
+                  "StateMachineArn": "arn:aws:states:ap-northeast-2:367354627828:stateMachine:dc-v2",
+                  "Input": {
+                    "keyword.$": "$.keyword",
+                    "period.$": "$.period",
+                    "start_date.$": "$.start_date",
+                    "target_prefix": "dc",
+                    "url": "https://gall.dcinside.com/board/lists?id=car_new1",
+                    "queue_url": "https://sqs.ap-northeast-2.amazonaws.com/367354627828/dc-crawler-sqs"
+                  }
+                },
+                "End": true
+              }
+            }
+          },
+          {
+            "StartAt": "CLIEN CRAWLER",
+            "States": {
+              "CLIEN CRAWLER": {
+                "Type": "Task",
+                "Resource": "arn:aws:states:::states:startExecution.sync:2",
+                "OutputPath": "$.Output",
+                "Parameters": {
+                  "StateMachineArn": "arn:aws:states:ap-northeast-2:367354627828:stateMachine:clien-crawler",
+                  "Input": {
+                    "keyword.$": "$.keyword",
+                    "start_date.$": "$.start_date",
+                    "period.$": "$.period",
+                    "target_prefix": "clien",
+                    "queue_url": "https://sqs.ap-northeast-2.amazonaws.com/367354627828/clien-crawler-sqs"
+                  }
+                },
+                "End": true
+              }
+            }
+          },
+          {
+            "StartAt": "BOBAE CRAWLER",
+            "States": {
+              "BOBAE CRAWLER": {
+                "Type": "Task",
+                "Resource": "arn:aws:states:::states:startExecution.sync:2",
+                "OutputPath": "$.Output",
+                "Parameters": {
+                  "StateMachineArn": "arn:aws:states:ap-northeast-2:367354627828:stateMachine:bobae-crawler",
+                  "Input": {
+                    "keyword.$": "$.keyword",
+                    "start_date.$": "$.start_date",
+                    "period.$": "$.period",
+                    "target_prefix": "bobae",
+                    "queue_url": "https://sqs.ap-northeast-2.amazonaws.com/367354627828/bobae-crawler-sqs"
+                  }
+                },
+                "End": true
+              }
+            }
+          }
+        ],
+        "End": true
+      }
+    }
+  }

@@ -32,11 +32,17 @@ def lambda_handler(event, context):
     keyword = event['keyword']
     target_prefix = event['target_prefix']
     start_date = datetime.datetime.fromisoformat(event['start_date'])
-    period = int(event['period'])
+    period = event.get('period',1)
     queue_url = event['queue_url']
 
+    try:
+        period = int(period)
+    except ValueError:
+        logging.error('Property "resume" should be integer.')
+        return {}
+    
     current_time = time_now()
-    file_name = f"{target_prefix}_{keyword}_{event['start_date']}.{TARGET_FORMAT}"
+    file_name = f"{target_prefix}_{keyword}_{event['start_date']}"
 
     post_links = get_page_links(keyword, current_time, start_date, period)
 

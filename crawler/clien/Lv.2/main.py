@@ -131,6 +131,8 @@ def get_post_info(driver: webdriver.Chrome, wait: WebDriverWait, url: str):
 
     page_dict['created_at'] = date_text[0].strip() if date_text else None
     page_dict['modified_at'] = date_text[1].strip() if len(date_text) > 1 else page_dict['created_at']
+    url = driver.current_url
+    page_dict['url'] = url
 
     # 댓글 추출
     comments = []

@@ -23,7 +23,7 @@ sudo docker run \
    -v ~/bareun/var:/bareun/var \
    bareunai/bareun:latest
 
-sudo docker exec bareun /bareun/bin/bareun -reg koba-KCYMNUY-CJXE2SA-TEQWUWY-KLLE34I
+sudo docker exec bareun /bareun/bin/bareun -reg <API_KEY>
 
 sudo yum install -y python3 python3-pip
 sudo pip install numpy scikit-learn sentence-transformers bareunpy flask

@@ -22,7 +22,7 @@ MonitorDog는 특정 키워드에 대한 관심도를 '이슈화 점수'라는 �
 키워드 추출 알고리즘은 함께 사용되는 모델이 바른 형태소 분석기와 함께 사용할 수 있는지를 중점으로 두고 찾아보았습니다. 그 결과 [KPF-KeyBERT](https://github.com/KPF-bigkinds/BIGKINDS-LAB/tree/main/KPF-KeyBERT)를 참고해 작성되었습니다.
 키워드 추출은 다음과 같은 과정을 거칩니다.
 
-![https://user-images.githubusercontent.com/87846939/221451753-58285dc6-2fbc-47bd-9e7a-b90d3879929a.png]()
+![](https://user-images.githubusercontent.com/87846939/221451753-58285dc6-2fbc-47bd-9e7a-b90d3879929a.png)
 출처: [KPF-KeyBERT 리포지토리](https://github.com/KPF-bigkinds/BIGKINDS-LAB/tree/main/KPF-KeyBERT)
 
 1. 바른 형태소 분석기를 통해 게시글에서 명사만을 추출합니다.

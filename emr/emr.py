@@ -32,14 +32,13 @@ from scipy.stats import zscore
 from fastdtw import fastdtw
 import numpy as np
 
+
 BUCKET_NAME = "monitordog-data"
 DIRECTORY_PATH = "keywords"
 
 USERNAME = "<USERNAME>"
 PASSWORD = "<PASSWORD>"
-REDSHIFT_JDBC_URL = (
-    f"<JDBC URL>"
-)
+REDSHIFT_JDBC_URL = f"<JDBC URL>"
 REDSHIFT_IAM_ROLE = "<ARN>"
 
 S3_TEMP_DIR = "s3://ex-emr/temp/"
@@ -54,31 +53,42 @@ S3_TEMP_DIR = "s3://ex-emr/temp/"
 
 
 # DTW 유사도 함수 정의
-def dtw_similarity_score(x, y, radius: int = 1) -> float:
+def dtw_similarity_score(a, b, scale_factor: float = 50, radius: int = 1) -> float:
     """
     정규화된 DTW 유사도 계산
-    :param x: 그래프를 나타내는 1차원 리스트
-    :param y: 그래프를 나타내는 1차원 리스트, x와 길이가 동일해야 정확한 값이 나옴
+    :param x: 그래프를 나타내는 1차원 리스트 (pd.Series)
+    :param y: 그래프를 나타내는 1차원 리스트 (pd.Series), x와 길이가 동일해야 정확한 값이 나옴
     :param radius: Fast DTW 알고리즘에서 경로를 탐색할 범위
     :return: [0,1] 사이의 실수값, 1에 가까울수록 유사한 그래프
     """
-    if not isinstance(x, list) or not isinstance(y, list):
-        raise TypeError("입력은 list 형태여야 합니다.")
+    a = a.to_numpy()
+    b = b.to_numpy()
 
-    x = list(x)[:1440]
-    y = list(y)[:1440]
+    a_x = np.arange(len(a))[a != 0]
+    b_x = np.arange(len(b))[b != 0]
 
-    raw_distance, _ = fastdtw(
-        list(enumerate(x)), list(enumerate(y)), dist=euclidean, radius=radius
-    )
+    a_nonzero = a[a != 0]
+    b_nonzero = b[b != 0]
 
-    max_seq = max(max(x), max(y))
-    min_seq = min(min(x), min(y))
-    max_distance = abs(max_seq - min_seq) * max(len(x), len(y))
+    num_a_nonzero = len(a_nonzero)
+    num_b_nonzero = len(b_nonzero)
 
-    normalized_distance = raw_distance / max_distance
+    # 비영 영역이 없는 경우 처리
+    if num_a_nonzero == 0 and num_b_nonzero == 0:
+        return 0.0  # 아무런 신호가 없는 경우 무시하기 위해 0 반환
+    elif num_a_nonzero == 0 or num_b_nonzero == 0:
+        return 0.0
 
-    similarity_score = 1 - normalized_distance
+    a_nonzero = zscore(a_nonzero)
+    b_nonzero = zscore(b_nonzero)
+
+    a_nonzero = np.vstack((a_x, a_nonzero)).T
+    b_nonzero = np.vstack((b_x, b_nonzero)).T
+
+    raw_distance, _ = fastdtw(a_nonzero, b_nonzero, radius=radius, dist=euclidean)
+
+    # 정규화된 거리 계산 (0과 1 사이의 값)
+    similarity_score = np.exp(-raw_distance / scale_factor)
 
     return similarity_score
 
@@ -393,10 +403,16 @@ def make_issue_df(keyword_df, raw_data_df, start_date, end_date):
         (col("file_create_time") >= start_date) & (col("file_create_time") <= end_date)
     )
 
-    # 여기서 감정 그래프 추가
     issue_df = (
         filtered_df.groupBy("file_create_time", "current_keyword")
-        .agg({"num_of_comments": "sum", "viewed": "sum", "liked": "sum", "sentiment": "sum"})
+        .agg(
+            {
+                "num_of_comments": "sum",
+                "viewed": "sum",
+                "liked": "sum",
+                "sentiment": "sum",
+            }
+        )
         .withColumnRenamed("sum(num_of_comments)", "num_of_comments")
         .withColumnRenamed("sum(viewed)", "viewed")
         .withColumnRenamed("sum(liked)", "liked")
@@ -449,11 +465,17 @@ def make_current_issue_df(time_keywords_df, issue_df):
         col("i.num_of_comments"),
         col("i.viewed"),
         col("i.liked"),
-        col("i.sentiment")
+        col("i.sentiment"),
     )
 
     current_issue_df = current_issue_df.fillna(
-        {"current_issueization": 0, "num_of_comments": 0, "viewed": 0, "liked": 0, "sentiment": 0}
+        {
+            "current_issueization": 0,
+            "num_of_comments": 0,
+            "viewed": 0,
+            "liked": 0,
+            "sentiment": 0,
+        }
     )
 
     current_issue_df = current_issue_df.withColumn(
@@ -523,9 +545,6 @@ def get_similarity(spark, current_issue_df):
     )
 
     similar_df = similar_df.drop("current_issueization", "past_issueization")
-    # similar_df = similar_df.withColumn(
-    #     "similarity_degree", col("similarity_degree").cast("float")
-    # )
 
     return similar_df
 
@@ -542,7 +561,6 @@ def extract(spark):
     print(recent_time)
 
     prefix = f"{DIRECTORY_PATH}/{recent_time}"
-    # prefix = f"{DIRECTORY_PATH}/2024-08-24T19:00:00"
 
     print(prefix)
 
@@ -622,7 +640,7 @@ def alert_alarm(frequency_df, similar_df):
 
     client = boto3.client("sns", region_name="ap-northeast-2")
     response = client.publish(
-        TargetArn="arn:aws:sns:ap-northeast-2:367354627828:monitordog-notifications",
+        TargetArn="<ARN>",
         Message=json.dumps(message),
     )
 

@@ -3,8 +3,8 @@ import json
 import logging
 from urllib import parse
 from flask import Flask, request, jsonify
-from transformers import TextClassificationPipeline, BertForSequenceClassification, AutoTokenizer
-
+from optimum.onnxruntime import ORTModelForSequenceClassification
+from transformers import TextClassificationPipeline, AutoTokenizer
 
 app = Flask(__name__)
 
@@ -22,7 +22,6 @@ logger = logging.getLogger(__name__)
 
 
 def batch_inference(bucket_name, file_name):
-    model = SentimentModel()
     file_name = parse.unquote(file_name)
     logging.info("파라미터 확인, 버킷: " + bucket_name + ", 파일: " + file_name)
 
@@ -63,6 +62,7 @@ def batch_inference(bucket_name, file_name):
 
         logging.info("파일 업로드 실패", e.with_traceback())
 
+
 class SentimentModel(object):
     """
     huggingfaces 감정 분석 모델 클래스
@@ -73,7 +73,7 @@ class SentimentModel(object):
         :param model_name: huggingfaces 모델 이름
         """
         self.model_name = model_name
-        self.model = BertForSequenceClassification.from_pretrained(model_name)
+        self.model = ORTModelForSequenceClassification.from_pretrained(model_name, export=True)
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, clean_up_tokenization_spaces=False)
         self.pipe = TextClassificationPipeline(
             model = self.model,
@@ -86,8 +86,8 @@ class SentimentModel(object):
             self.configs = configs
         else:
             self.configs = {
-                'padding': True,
-                'truncation': True,
+                'padding': True, 
+                'truncation': True, 
                 'max_length': 300,
             }
 
@@ -122,6 +122,7 @@ def extract_keywords():
     batch_inference(bucket_name, file_name)
     return "batch process is called"
 
+model = SentimentModel()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)

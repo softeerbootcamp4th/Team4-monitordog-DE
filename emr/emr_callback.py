@@ -29,7 +29,7 @@ def lambda_handler(event, context):
     
     if uploaded_files_count >= required_file_count:
         
-        cluster_id = 'j-3U3DUF2VU89CD'  # EMR 클러스터 ID를 넣으세요
+        cluster_id = '<CLUSTER ID>'  # EMR 클러스터 ID를 넣으세요
         step_args = [
             'spark-submit', 
             '--deploy-mode', 'cluster',

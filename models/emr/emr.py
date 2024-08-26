@@ -42,6 +42,7 @@ REDSHIFT_JDBC_URL = (
 )
 REDSHIFT_IAM_ROLE = "<ARN>"
 
+
 S3_TEMP_DIR = "s3://ex-emr/temp/"
 
 

@@ -35,12 +35,12 @@ import numpy as np
 BUCKET_NAME = "monitordog-data"
 DIRECTORY_PATH = "keywords"
 
-USERNAME = "monitordog-awsuser"
-PASSWORD = "Monitordog1234!!"
+USERNAME = "<USERNAME>"
+PASSWORD = "<PASSWORD>"
 REDSHIFT_JDBC_URL = (
-    f"jdbc:redshift://10.0.0.8:5439/monitordog-dev?user={USERNAME}&password={PASSWORD}"
+    f"<JDBC URL>"
 )
-REDSHIFT_IAM_ROLE = "arn:aws:iam::367354627828:role/service-role/AmazonRedshift-CommandsAccessRole-20240819T031044"
+REDSHIFT_IAM_ROLE = "<ARN>"
 
 S3_TEMP_DIR = "s3://ex-emr/temp/"
 
